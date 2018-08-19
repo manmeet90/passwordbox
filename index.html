@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Passwordbox</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+
+    <link rel="stylesheet" type="text/css" media="screen" href="src/main.css" />
+</head>
+<body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <!-- Latest compiled and minified JavaScript -->
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+<script src="https://www.gstatic.com/firebasejs/5.4.0/firebase.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.9-1/crypto-js.min.js"></script>
+<script>
+  // Initialize Firebase
+  var config = {
+    apiKey: "AIzaSyBdrlyvKBJwdyF3uBAJ3bXhUfFJT4niPHQ",
+    authDomain: "passwordbox-ba471.firebaseapp.com",
+    databaseURL: "https://passwordbox-ba471.firebaseio.com",
+    projectId: "passwordbox-ba471",
+    storageBucket: "passwordbox-ba471.appspot.com",
+    messagingSenderId: "920761374094"
+  };
+  firebase.initializeApp(config);
+</script>
+    <script src="src/main.js"></script>
+  <div class="container">
+      <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#passwrdDlg">
+          Create New Record
+        </button>
+      <div class='row' id="passwordList">
+          <table class="table table-bordered table-condensed">
+              <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Password</th>
+                    <th>
+                      Actions
+                    </th>
+                </tr>
+              </thead>
+              <tbody>
+
+              </tbody>
+          </table>
+      </div>
+
+      <div class="modal fade" id="passwrdDlg" tabindex="-1" role="dialog" aria-labelledby="passwrdDialog">
+        <div class="modal-dialog" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+              <h4 class="modal-title" id="passwrdDialog">Create/Edit Record</h4>
+            </div>
+            <div class="modal-body">
+                <div id="createPasswordForm" class="row">
+                    <form class="form-inline">
+                        <div class="form-group">
+                          <label for="title">Title</label>
+                          <input type="text" id="title" class="form-control" id="title" placeholder="Enter Title">
+                        </div>
+                        <div class="form-group">
+                          <label for="password">Password</label>
+                          <input type="text" id="paswrd" class="form-control" id="password" placeholder="Enter password">
+                        </div>
+                      </form>
+                </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+              <button type="button" id="createBtn" class="btn btn-success" data-dismiss="modal">Create</button>
+              <button type="button" id="editBtn" class="btn btn-primary" data-dismiss="modal">Edit</button>
+            </div>
+          </div>
+        </div>
+      </div>
+  </div>
+</body>
+</html>
