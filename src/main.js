@@ -5,6 +5,7 @@ class Passwordbox {
         console.log('passwordbox constructor');
         this.showCreateForm = false;
         this.secretKey = null;
+        this.selectedRecord = null;
     }
 
     initApp() {
@@ -12,6 +13,10 @@ class Passwordbox {
         this.initDB();
         this.loadList();
         this.createForm();
+        this.mode = null;
+        if(sessionStorage.getItem('secret-key')){
+            this.secretKey = JSON.parse(sessionStorage.getItem('secret-key'));
+        }
     }
 
     initDB() {
@@ -23,12 +28,34 @@ class Passwordbox {
     }
 
     attachListeners() {
+        $('#createRecordBtn').off('click').on('click', (e) => {
+            this.mode = 1;
+        });
+
+        $('#secretKeyBtn').off('click').on('click', (e) => {
+            let value = prompt('Enter Secret Key');
+            if(value) {
+                this.secretKey = value;
+                sessionStorage.setItem('secret-key', JSON.stringify(this.secretKey));
+            }
+        });
         $('#passwrdDlg').on('shown.bs.modal',  (e) => {
+            $('#title').val('');
+            $('#paswrd').val('');
             $('#createBtn').off('click').on('click', (e) => {
                 this.onCreateButtonClicked(e);
             });
+
+            if(this.mode == 2) {
+                let bytes  = CryptoJS.AES.decrypt(this.selectedRecord.password, this.secretKey);
+                let plaintext = bytes.toString(CryptoJS.enc.Utf8);
+                $('#title').val(this.selectedRecord.title);
+                $('#paswrd').val(plaintext);
+            }
         });
-        
+        $('#passwrdDlg').on('hidden.bs.modal',  (e) => {
+            this.selectedRecord = null;
+        });
     }
 
     onCreateButtonClicked(e) {
@@ -36,7 +63,6 @@ class Passwordbox {
         let title = $('#createPasswordForm #title').val();
         let password = $('#createPasswordForm #paswrd').val();
         if(title && password) {
-            console.log(title, password);
             if(this.secretKey) {
                 this.saveData(title, password);
             }else {
@@ -53,7 +79,7 @@ class Passwordbox {
 
     saveData(title, password) {
         let cipherText =  CryptoJS.AES.encrypt(password, this.secretKey);
-        let uuid = this.generateUUID();
+        let uuid = this.mode === 1 ? this.generateUUID(): this.selectedRecord.id;
         this.db.ref(`passwords/${uuid}`).set({
             id: uuid,
             title: title,
@@ -82,10 +108,10 @@ class Passwordbox {
             <td>${row.title}</td>
             <td>${row.password}</td>
             <td>
-                <button data-id='${row.id}' class='btn btn-sm btn-primary showPasswrdBtn'>Show Password</button>
-                <button data-id='${row.id}' class='hide btn btn-sm btn-default hidePasswrdBtn'>Hide Password</button>
-                <button data-id='${row.id}' class='btn btn-sm btn-danger deletePasswrdBtn'>Delete Record</button>
-                <button data-id='${row.id}' class='btn btn-sm btn-success editPasswrdBtn'>Edit Record</button>
+                <button data-id='${row.id}' class='btn btn-xs btn-primary showPasswrdBtn'>Show Password</button>
+                <button data-id='${row.id}' class='hide btn btn-xs btn-default hidePasswrdBtn'>Hide Password</button>
+                <button data-id='${row.id}' class='btn btn-xs btn-danger deletePasswrdBtn'>Delete Record</button>
+                <button data-id='${row.id}' class='btn btn-xs btn-success editPasswrdBtn'>Edit Record</button>
             </td>
             </tr>`;
         });
@@ -102,6 +128,10 @@ class Passwordbox {
         });
         $('#passwordList tbody .deletePasswrdBtn').off('click').on('click', (e) => {
             this.onDeletePasswordBtnClicked(e);
+        });
+
+        $('#passwordList tbody .editPasswrdBtn').off('click').on('click', (e) => {
+            this.onEditPasswordBtnClicked(e);
         });
     }
 
@@ -155,6 +185,19 @@ class Passwordbox {
                 this.loadList();
             }
         }        
+    }
+
+    onEditPasswordBtnClicked(e) {
+        this.mode = 2;
+        $('#passwrdDlg').modal('show');
+        let id = $(e.currentTarget).attr('data-id');
+        if(id) {
+            let row = this.data.find(_data => _data.id === id);
+            if(row) {
+                this.selectedRecord = row;
+                
+            }
+        }
     }
 
     generateUUID() {
