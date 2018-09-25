@@ -9,7 +9,7 @@ class Passwordbox {
     }
 
     initApp() {
-        console.log("1");
+        console.log("initApp called");
         this.initDB();
         this.loadList();
         this.createForm();
