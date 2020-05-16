@@ -1,5 +1,5 @@
 
-
+// Passwordbox component
 class Passwordbox {
     constructor(){
         console.log('passwordbox constructor');
