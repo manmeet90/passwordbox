@@ -20,6 +20,20 @@ class Passwordbox {
     }
 
     initDB() {
+        // Initialize Firebase
+        var configObj = {
+            apiKey: "QUl6YVN5QmRybHl2S0JKd2R5RjN1QkFKM2JYaFVmRkpUNG5pUEhR",
+            authDomain: "cGFzc3dvcmRib3gtYmE0NzEuZmlyZWJhc2VhcHAuY29t",
+            databaseURL: "aHR0cHM6Ly9wYXNzd29yZGJveC1iYTQ3MS5maXJlYmFzZWlvLmNvbQ==",
+            projectId: "cGFzc3dvcmRib3gtYmE0NzE=",
+            storageBucket: "cGFzc3dvcmRib3gtYmE0NzEuYXBwc3BvdC5jb20=",
+            messagingSenderId: "OTIwNzYxMzc0MDk0"
+        };
+        let config = {};
+        for(let key of Object.keys(configObj)){
+            config[key] = atob(configObj[key]);
+        }
+        firebase.initializeApp(config);
         this.db = firebase.database();
     }
 
@@ -101,12 +115,11 @@ class Passwordbox {
 
     populateGrid(data) {
         let content = '';
-        console.log(data);
         data.forEach( _data => {
             let row = _data;
             content += `<tr id='${row.id}'>
             <td>${row.title}</td>
-            <td>${row.password}</td>
+            <td>${row.password.split('').fill('*').join('')}</td>
             <td>
                 <button data-id='${row.id}' class='btn btn-xs btn-primary showPasswrdBtn'>Show Password</button>
                 <button data-id='${row.id}' class='hide btn btn-xs btn-default hidePasswrdBtn'>Hide Password</button>
@@ -170,7 +183,7 @@ class Passwordbox {
         if(id) {
             let row = this.data.find(_data => _data.id === id);
             if(row) {
-                $(`#passwordList tr#${row.id} td:nth-child(2)`).text(row.password);
+                $(`#passwordList tr#${row.id} td:nth-child(2)`).text(row.password.split('').fill('*').join(''));
                 $(`#passwordList tr#${row.id} .btn-primary`).toggleClass('hide');
                 $(e.currentTarget).toggleClass('hide');
             }
