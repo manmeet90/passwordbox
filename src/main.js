@@ -100,7 +100,7 @@ class Passwordbox {
             });
 
             if(this.mode == 2) {
-                let bytes  = CryptoJS.AES.decrypt(this.selectedRecord.password, this.secretKey);
+                let bytes  = CryptoJS.AES.decrypt(this.selectedRecord.password, this.getkeyToDecrypt(this.secretKey));
                 let plaintext = bytes.toString(CryptoJS.enc.Utf8);
                 $('#title').val(this.selectedRecord.title);
                 $('#paswrd').val(plaintext);
@@ -134,7 +134,7 @@ class Passwordbox {
             }else {
                 let secretKey = prompt('Enter the secret key for cipher');
                 if(secretKey) {
-                    this.secretKey = CryptoJS.AES.encrypt(value, this.config.superkey);
+                    this.secretKey = CryptoJS.AES.encrypt(secretKey, this.config.superkey);
                     sessionStorage.setItem('secret-key', this.secretKey);
                     this.saveData(title, password);
                 }else {
@@ -144,10 +144,15 @@ class Passwordbox {
         }
     }
 
+    getkeyToDecrypt(keyStr) {
+        let bytes  = CryptoJS.AES.decrypt(keyStr, this.config.superkey);
+        return bytes.toString(CryptoJS.enc.Utf8);
+    }
+
     saveData(title, password) {
-        let bytes  = CryptoJS.AES.decrypt(this.secretKey, this.config.superkey);
-        let key = bytes.toString(CryptoJS.enc.Utf8);
-        let cipherText =  CryptoJS.AES.encrypt(password, key);
+        // let bytes  = CryptoJS.AES.decrypt(this.secretKey, this.config.superkey);
+        // let key = bytes.toString(CryptoJS.enc.Utf8);
+        let cipherText =  CryptoJS.AES.encrypt(password, this.getkeyToDecrypt(this.secretKey));
         let uuid = this.mode === 1 ? this.generateUUID(): this.selectedRecord.id;
         this.db.ref(`passwords/${uuid}`).set({
             id: uuid,
@@ -222,7 +227,8 @@ class Passwordbox {
                 }else {
                     let secretKey = prompt('Enter the secret key for cipher');
                     if(secretKey) {
-                        this.secretKey = secretKey;
+                        this.secretKey = CryptoJS.AES.encrypt(secretKey, this.config.superkey);
+                        sessionStorage.setItem('secret-key', this.secretKey);
                         this.decryptDataAndShow(row);
                         $(`#passwordList tr#${row.id} .btn-default`).toggleClass('hide');
                         $(e.currentTarget).toggleClass('hide');
@@ -235,9 +241,9 @@ class Passwordbox {
     }
 
     decryptDataAndShow(row) {
-        let _bytes  = CryptoJS.AES.decrypt(this.secretKey, this.config.superkey);
-        let key = _bytes.toString(CryptoJS.enc.Utf8);
-        let bytes  = CryptoJS.AES.decrypt(row.password, key);
+        // let _bytes  = CryptoJS.AES.decrypt(this.secretKey, this.config.superkey);
+        // let key = _bytes.toString(CryptoJS.enc.Utf8);
+        let bytes  = CryptoJS.AES.decrypt(row.password, this.getkeyToDecrypt(this.secretKey));
         let plaintext = bytes.toString(CryptoJS.enc.Utf8);
         $(`#passwordList tr#${row.id} td:nth-child(2)`).text(plaintext);
     }
