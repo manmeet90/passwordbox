@@ -7,16 +7,54 @@ class Passwordbox {
         this.showCreateForm = false;
         this.secretKey = null;
         this.selectedRecord = null;
+        this.isLoggedIn = false;
     }
 
     initApp() {
         console.log("initApp called");
         this.initDB();
-        this.loadList();
-        this.createForm();
+        this.isLoggedIn = JSON.parse(sessionStorage.getItem('isLoggedIn'));
+        if(this.isLoggedIn) {
+            document.querySelector('#login-wizard').classList.add('hide');
+            document.querySelector('#main-content').classList.remove('hide');
+            this.loadConfig();
+            this.loadList();
+        } else {
+            document.querySelector('#login-wizard').classList.remove('hide');
+            document.querySelector('#main-content').classList.add('hide');
+            document.querySelector('#login-btn').addEventListener('click', (e) => this.onLoginBtnClick(e));
+        }
+        
         this.mode = null;
         if(sessionStorage.getItem('secret-key')){
-            this.secretKey = JSON.parse(sessionStorage.getItem('secret-key'));
+            this.secretKey = sessionStorage.getItem('secret-key');
+        }
+    }
+
+    onLoginBtnClick(e) {
+        e.preventDefault();
+        document.querySelector('#login-error').classList.add('hide');
+        const formData = new FormData(document.querySelector('#login-form'));
+        this.login(formData.get('username'),formData.get('password'));
+    }
+
+    login(username, password) {
+        if(username && password) {
+            firebase.auth().signInWithEmailAndPassword(username, password)
+            .then(cred => {
+                if(cred.user) {
+                    // login successful
+                    this.isLoggedIn = true;
+                    sessionStorage.setItem('isLoggedIn', this.isLoggedIn);
+                    document.querySelector('#login-wizard').classList.add('hide');
+                    document.querySelector('#main-content').classList.remove('hide');
+                    this.loadConfig();
+                    this.loadList();
+                }
+            }).catch(err => {
+                document.querySelector('#login-error').innerHTML = err.message || "Login failed.Try after soem time.";
+                document.querySelector('#login-error').classList.remove('hide');
+            });
         }
     }
 
@@ -49,9 +87,9 @@ class Passwordbox {
 
         $('#secretKeyBtn').off('click').on('click', (e) => {
             let value = prompt('Enter Secret Key');
-            if(value) {
-                this.secretKey = value;
-                sessionStorage.setItem('secret-key', JSON.stringify(this.secretKey));
+            if(value && this.config) {
+                this.secretKey = CryptoJS.AES.encrypt(value, this.config.superkey);
+                sessionStorage.setItem('secret-key', this.secretKey);
             }
         });
         $('#passwrdDlg').on('shown.bs.modal',  (e) => {
@@ -71,6 +109,19 @@ class Passwordbox {
         $('#passwrdDlg').on('hidden.bs.modal',  (e) => {
             this.selectedRecord = null;
         });
+
+        document.querySelector('#logout').addEventListener('click', (e) => {
+            e.preventDefault();
+            this.logout();
+        });
+    }
+
+    logout() {
+        firebase.auth().signOut().then(_ => {
+            this.isLoggedIn = false;
+            sessionStorage.clear();
+            window.location.reload();
+        })
     }
 
     onCreateButtonClicked(e) {
@@ -83,7 +134,8 @@ class Passwordbox {
             }else {
                 let secretKey = prompt('Enter the secret key for cipher');
                 if(secretKey) {
-                    this.secretKey = secretKey;
+                    this.secretKey = CryptoJS.AES.encrypt(value, this.config.superkey);
+                    sessionStorage.setItem('secret-key', this.secretKey);
                     this.saveData(title, password);
                 }else {
                     alert('No secret key or incorrect secret key entered.Could not proceed.');
@@ -93,7 +145,9 @@ class Passwordbox {
     }
 
     saveData(title, password) {
-        let cipherText =  CryptoJS.AES.encrypt(password, this.secretKey);
+        let bytes  = CryptoJS.AES.decrypt(this.secretKey, this.config.superkey);
+        let key = bytes.toString(CryptoJS.enc.Utf8);
+        let cipherText =  CryptoJS.AES.encrypt(password, key);
         let uuid = this.mode === 1 ? this.generateUUID(): this.selectedRecord.id;
         this.db.ref(`passwords/${uuid}`).set({
             id: uuid,
@@ -101,6 +155,12 @@ class Passwordbox {
             password: cipherText.toString()
         });
         this.loadList();
+    }
+
+    loadConfig() {
+        this.db.ref('configs').once('value').then(snapshot => {
+            this.config = snapshot.val();
+        });
     }
 
     loadList() {
@@ -111,6 +171,7 @@ class Passwordbox {
                 this.data.push(_data[key]);
             }
             this.populateGrid(this.data);
+            this.createForm();
         });
     }
 
@@ -174,10 +235,14 @@ class Passwordbox {
     }
 
     decryptDataAndShow(row) {
-        let bytes  = CryptoJS.AES.decrypt(row.password, this.secretKey);
+        let _bytes  = CryptoJS.AES.decrypt(this.secretKey, this.config.superkey);
+        let key = _bytes.toString(CryptoJS.enc.Utf8);
+        let bytes  = CryptoJS.AES.decrypt(row.password, key);
         let plaintext = bytes.toString(CryptoJS.enc.Utf8);
         $(`#passwordList tr#${row.id} td:nth-child(2)`).text(plaintext);
     }
+
+    
 
     onHidePasswordBtnClicked(e) {
         let id = $(e.currentTarget).attr('data-id');
