@@ -2,7 +2,7 @@
 // Passwordbox component
 class Passwordbox {
     constructor(){
-        console.log(process.env);
+        // console.log(process.env);
         console.log('passwordbox constructor');
         this.showCreateForm = false;
         this.secretKey = null;
