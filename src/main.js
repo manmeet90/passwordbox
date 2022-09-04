@@ -1,6 +1,7 @@
 
 // Passwordbox component
 class Passwordbox {
+
     constructor(){
         // console.log(process.env);
         console.log('passwordbox constructor');
@@ -8,11 +9,39 @@ class Passwordbox {
         this.secretKey = null;
         this.selectedRecord = null;
         this.isLoggedIn = false;
+        this.baseUrl = 'https://passwordbox-api.glitch.me';
+    }
+
+    request(method, url, body) {
+        const apiRequestUrl =`${this.baseUrl}${url}`;
+        return new Promise((resolve, reject) => {
+            fetch(apiRequestUrl, {
+                method: method,
+                mode: 'cors',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: body ? JSON.stringify(body): null
+            })
+            .then((response) => response.json())
+            .then(response => {
+                if(response.status !== 'error') {
+                    resolve(response);
+                } else {
+                    reject(response);
+                }
+            })
+            .catch(erroResponse => {
+                reject(erroResponse);
+            })
+        }); 
+        
     }
 
     initApp() {
         console.log("initApp called");
-        this.initDB();
+        // this.initDB();
         this.isLoggedIn = JSON.parse(sessionStorage.getItem('isLoggedIn'));
         if(this.isLoggedIn) {
             document.querySelector('#login-wizard').classList.add('hide');
@@ -40,9 +69,12 @@ class Passwordbox {
 
     login(username, password) {
         if(username && password) {
-            firebase.auth().signInWithEmailAndPassword(username, password)
-            .then(cred => {
-                if(cred.user) {
+            this.request('POST','/auth/login', {
+                username,password
+            })
+            // firebase.auth().signInWithEmailAndPassword(username, password)
+            .then(response => {
+                if(response.data) {
                     // login successful
                     this.isLoggedIn = true;
                     sessionStorage.setItem('isLoggedIn', this.isLoggedIn);
@@ -52,7 +84,8 @@ class Passwordbox {
                     this.loadList();
                 }
             }).catch(err => {
-                document.querySelector('#login-error').innerHTML = err.message || "Login failed.Try after soem time.";
+                console.log(err);
+                document.querySelector('#login-error').innerHTML = err?.errors[0]?.message || "Login failed.Try after some time.";
                 document.querySelector('#login-error').classList.remove('hide');
             });
         }
@@ -117,11 +150,12 @@ class Passwordbox {
     }
 
     logout() {
-        firebase.auth().signOut().then(_ => {
+        this.request('GET', '/auth/logout')
+        .then(_ => {
             this.isLoggedIn = false;
             sessionStorage.clear();
             window.location.reload();
-        })
+        });
     }
 
     onCreateButtonClicked(e) {
@@ -154,23 +188,36 @@ class Passwordbox {
         // let key = bytes.toString(CryptoJS.enc.Utf8);
         let cipherText =  CryptoJS.AES.encrypt(password, this.getkeyToDecrypt(this.secretKey));
         let uuid = this.mode === 1 ? this.generateUUID(): this.selectedRecord.id;
-        this.db.ref(`passwords/${uuid}`).set({
+        // this.db.ref(`passwords/${uuid}`).set({
+        //     id: uuid,
+        //     title: title,
+        //     password: cipherText.toString()
+        // });
+        this.request('POST', '/info', {
             id: uuid,
             title: title,
             password: cipherText.toString()
+        })
+        .then(response => {
+            if(response.data.saved) {
+                this.loadList();
+            }
         });
-        this.loadList();
     }
 
     loadConfig() {
-        this.db.ref('configs').once('value').then(snapshot => {
-            this.config = snapshot.val();
+        // this.db.ref('configs').once('value')
+        this.request('GET','/info/configs')
+        .then(snapshot => {
+            this.config = snapshot.data;
         });
     }
 
     loadList() {
-        this.db.ref('passwords').once('value').then(snapshot => {
-            let _data = snapshot.val();
+        // this.db.ref('passwords').once('value')
+        this.request('GET','/info')
+        .then(snapshot => {
+            let _data = snapshot.data;
             this.data = [];
             for(let key in _data) {
                 this.data.push(_data[key]);
@@ -266,8 +313,12 @@ class Passwordbox {
         let id = $(e.currentTarget).attr('data-id');
         if(id) {
             if(confirm("Are you sure you want to delete this record?")){
-                this.db.ref(`passwords/${id}`).remove();
-                this.loadList();
+                
+                // this.db.ref(`passwords/${id}`).remove();
+                this.request('DELETE',`/info/${id}`)
+                .then(response => {
+                    this.loadList();
+                });
             }
         }        
     }
