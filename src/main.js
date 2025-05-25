@@ -9,7 +9,7 @@ class Passwordbox {
         this.secretKey = null;
         this.selectedRecord = null;
         this.isLoggedIn = false;
-        this.baseUrl = 'https://passwordmanager-api.vercel.app/';
+        this.baseUrl = 'https://passwordmanager-api.vercel.app';
         //'https://passwordbox-api.glitch.me';
         
     }
