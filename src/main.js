@@ -51,9 +51,23 @@ class Passwordbox {
             this.loadConfig();
             this.loadList();
         } else {
-            document.querySelector('#login-wizard').classList.remove('hide');
-            document.querySelector('#main-content').classList.add('hide');
-            document.querySelector('#login-btn').addEventListener('click', (e) => this.onLoginBtnClick(e));
+            navigator.credentials
+            .get({
+            password: true,
+            mediation: "required",
+            })
+            .then((cred) => {
+                console.log(cred);
+                if (cred) {
+                    this.login(cred.id, cred.password);
+                } else {
+                    document.querySelector("#login-wizard").classList.remove("hide");
+                    document.querySelector("#main-content").classList.add("hide");
+                    document
+                    .querySelector("#login-btn")
+                    .addEventListener("click", (e) => this.onLoginBtnClick(e));
+                }
+            });
         }
         
         this.mode = null;
@@ -84,6 +98,7 @@ class Passwordbox {
                     document.querySelector('#main-content').classList.remove('hide');
                     this.loadConfig();
                     this.loadList();
+                    this.storePasswordInCredManager(username, password);
                 }
             }).catch(err => {
                 console.log(err);
@@ -91,6 +106,17 @@ class Passwordbox {
                 document.querySelector('#login-error').classList.remove('hide');
             });
         }
+    }
+
+    async storePasswordInCredManager(username, password) {
+        const cred = await navigator.credentials.create({
+        password: {
+            id: username,
+            password: password,
+            name: "Manmeet Gupta",
+        },
+        });
+        await navigator.credentials.store(cred);
     }
 
     initDB() {
