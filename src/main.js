@@ -43,7 +43,7 @@ class Passwordbox {
 
     initApp() {
         console.log("initApp called");
-        // this.initDB();
+        this.initDB();
         this.isLoggedIn = JSON.parse(sessionStorage.getItem('isLoggedIn'));
         if(this.isLoggedIn) {
             document.querySelector('#login-wizard').classList.add('hide');
